@@ -62,9 +62,20 @@ class Router
             return $this->callAction(
                 ...explode('@', $this->routes[$requestType][$uri])
             );
-        }
+        }else{
+			foreach ($this->routes[$requestType] as $key => $val){
+				$pattern = preg_replace('#\(/\)#', '/?', $key);
+				$pattern = "@^" .preg_replace('/{([a-zA-Z0-9\_\-]+)}/', '(?<$1>[a-zA-Z0-9\_\-]+)', $pattern). "$@D";
+				preg_match($pattern, $uri, $matches);
+				array_shift($matches);
+				if($matches){
+					$getAction = explode('@', $val);
+					return $this->callAction($getAction[0], $getAction[1], $matches);
+				}
+			}
+		}
 
-        throw new Exception('No route defined for this URI.');
+        throw new \Exception('No route defined for this URI. ' . htmlspecialchars($uri));
     }
 
     /**
@@ -73,7 +84,7 @@ class Router
      * @param string $controller
      * @param string $action
      */
-    protected function callAction($controller, $action)
+    protected function callAction($controller, $action, $vars = [])
     {
         $controller = "App\\Controllers\\{$controller}";
         $controller = new $controller;
@@ -84,6 +95,6 @@ class Router
             );
         }
 
-        return $controller->$action();
+        return $controller->$action($vars);
     }
 }
